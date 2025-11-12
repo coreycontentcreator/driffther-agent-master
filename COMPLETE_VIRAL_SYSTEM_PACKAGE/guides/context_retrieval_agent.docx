@@ -1,0 +1,327 @@
+\# agents/subagents/context_retrieval_subagent.py
+
+\"\"\"
+
+Context Retrieval Subagent: Retrieves relevant context from vector
+store.
+
+Provides additional knowledge to enhance content quality.
+
+\"\"\"
+
+from agents.base_agent import BaseAgent
+
+from config.settings import settings
+
+from typing import Dict, List
+
+import json
+
+class ContextRetrievalSubagent(BaseAgent):
+
+\"\"\"
+
+Subagent for retrieving relevant context from vector database.
+
+This subagent:
+
+1\. Identifies what context is needed
+
+2\. Queries vector store with relevant queries
+
+3\. Retrieves top matching chunks
+
+4\. Provides context to content creators
+
+\"\"\"
+
+def \_\_init\_\_(self, vector_store=None):
+
+\"\"\"
+
+Initialize Context Retrieval Subagent.
+
+Args:
+
+vector_store: Vector store instance (ChromaDB, Qdrant, etc.)
+
+\"\"\"
+
+super().\_\_init\_\_(
+
+name=\"Context Retrieval Subagent\",
+
+model_name=settings.SUBAGENT_MODEL,
+
+temperature=0.1, \# Low creativity for precise retrieval
+
+max_tokens=2000,
+
+role_description=\"Retrieves relevant context from knowledge base\"
+
+)
+
+self.vector_store = vector_store
+
+def \_get_system_prompt(self) -\> str:
+
+\"\"\"Define context retrieval strategy.\"\"\"
+
+return \"\"\"You are a context retrieval specialist. Your job is to
+identify
+
+what additional knowledge would help create better content, then
+retrieve it.
+
+YOUR RESPONSIBILITIES:
+
+1\. Analyze the topic and identify knowledge gaps
+
+2\. Generate effective search queries
+
+3\. Retrieve relevant context from vector store
+
+4\. Rank and filter results for relevance
+
+5\. Provide context to content creators
+
+QUERY GENERATION STRATEGY:
+
+\- Create 3-5 diverse queries per topic
+
+\- Mix broad and specific queries
+
+\- Include technical and layman terms
+
+\- Cover different aspects of the topic
+
+Example topic: \"Black Holes\"
+
+Good queries:
+
+\- \"black hole event horizon physics\"
+
+\- \"how black holes form from stars\"
+
+\- \"black hole discovery history\"
+
+\- \"black holes in popular culture\"
+
+\- \"supermassive black holes galaxies\"
+
+OUTPUT FORMAT:
+
+{
+
+\"queries_generated\": \[\"query1\", \"query2\", \"query3\"\],
+
+\"retrieved_chunks\": \[
+
+{
+
+\"content\": \"text chunk\",
+
+\"relevance_score\": 0.0-1.0,
+
+\"source\": \"document name\",
+
+\"use_case\": \"how this helps content creation\"
+
+}
+
+\],
+
+\"context_summary\": \"Brief summary of what was found\"
+
+}\"\"\"
+
+def execute(self, state: Dict) -\> Dict:
+
+\"\"\"
+
+Retrieve relevant context for content creation.
+
+Args:
+
+state: State with topic and coordination_plan
+
+Returns:
+
+State with retrieved_context
+
+\"\"\"
+
+self.log(\"Retrieving relevant context\...\")
+
+\# Get what context is needed
+
+coord_plan = state.get(\"coordination_plan\", {})
+
+context_needs = coord_plan.get(\"context_needs\", \[\])
+
+\# If no specific needs, generate queries from topic
+
+if not context_needs:
+
+context_needs = \[
+
+f\"{state.get(\'topic\')} detailed explanation\",
+
+f\"{state.get(\'topic\')} interesting facts\",
+
+f\"{state.get(\'topic\')} recent discoveries\"
+
+\]
+
+\# If vector store is available, query it
+
+if self.vector_store:
+
+retrieved = self.\_query_vector_store(context_needs)
+
+else:
+
+\# Simulate retrieval (in production, you\'d have real vector store)
+
+self.log(\"No vector store configured. Using simulated context.\",
+\"WARNING\")
+
+retrieved = self.\_simulate_retrieval(state)
+
+\# Update state
+
+state\[\"retrieved_context\"\] = retrieved
+
+from langchain_core.messages import HumanMessage
+
+state\[\"messages\"\].append(HumanMessage(
+
+content=f\"Context Retrieval completed: {len(retrieved)} relevant chunks
+found\"
+
+))
+
+\# Route to script writer (subagents can run in parallel)
+
+state\[\"next_step\"\] = \"script_writer_subagent\"
+
+return state
+
+def \_query_vector_store(self, queries: List\[str\]) -\> List\[Dict\]:
+
+\"\"\"
+
+Query vector store with multiple queries.
+
+Args:
+
+queries: List of search queries
+
+Returns:
+
+List of retrieved chunks with scores
+
+\"\"\"
+
+all_results = \[\]
+
+for query in queries\[:3\]: \# Limit to 3 queries
+
+try:
+
+\# Query vector store
+
+\# This assumes your vector store has a similarity_search method
+
+results = self.vector_store.similarity_search(
+
+query=query,
+
+k=5 \# Get top 5 results per query
+
+)
+
+for doc in results:
+
+all_results.append({
+
+\"content\": doc.page_content,
+
+\"relevance_score\": 0.85, \# Would come from vector store
+
+\"source\": doc.metadata.get(\"source\", \"Unknown\"),
+
+\"query\": query
+
+})
+
+except Exception as e:
+
+self.log(f\"Vector store query failed: {e}\", \"WARNING\")
+
+return all_results\[:10\] \# Return top 10 overall
+
+def \_simulate_retrieval(self, state: Dict) -\> List\[Dict\]:
+
+\"\"\"
+
+Simulate context retrieval when no vector store available.
+
+This is just for demo purposes. In production, use real vector store.
+
+Args:
+
+state: Current state
+
+Returns:
+
+Simulated context chunks
+
+\"\"\"
+
+topic = state.get(\"topic\", \"Unknown Topic\")
+
+return \[
+
+{
+
+\"content\": f\"Context about {topic}: Key scientific principles and
+background information that helps explain the topic to general
+audiences.\",
+
+\"relevance_score\": 0.9,
+
+\"source\": \"Knowledge Base\",
+
+\"use_case\": \"Background explanation\"
+
+},
+
+{
+
+\"content\": f\"Recent developments in {topic}: Latest research and
+discoveries that make the topic timely and relevant to current
+audiences.\",
+
+\"relevance_score\": 0.85,
+
+\"source\": \"Recent Research\",
+
+\"use_case\": \"Timeliness and relevance\"
+
+},
+
+{
+
+\"content\": f\"Common misconceptions about {topic}: Popular myths and
+misunderstandings that can be addressed to create engaging content.\",
+
+\"relevance_score\": 0.8,
+
+\"source\": \"Educational Resources\",
+
+\"use_case\": \"Engagement through correction\"
+
+}
+
+\]

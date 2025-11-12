@@ -1,0 +1,265 @@
+# ================================================================
+# VIRAL YOUTUBE DOCUMENTARY SYSTEM - Configuration File
+# ================================================================
+#
+# INSTRUCTIONS FOR BEGINNERS:
+# 1. Copy this file and rename it to "config.yaml"
+# 2. Replace all "your_key_here" with your actual API keys
+# 3. Customize settings below to match your needs
+# 4. Keep this file SECRET - never share your API keys!
+#
+# IMPORTANT: This is a TEMPLATE. The actual config.yaml should be
+# created by copying this file and adding your real API keys.
+# ================================================================
+
+# ===== API KEYS =====
+# These are required for the system to work
+
+api_keys:
+  # Anthropic Claude API - Main AI engine (REQUIRED)
+  # Get your key at: https://console.anthropic.com/
+  # Free tier: $5 credit to start
+  anthropic: "your_anthropic_api_key_here"
+  
+  # OpenAI API - For embeddings (REQUIRED)
+  # Get your key at: https://platform.openai.com/api-keys
+  # Used only for converting text to vectors (cheap)
+  openai: "your_openai_api_key_here"
+  
+  # JSTOR API - Academic research database (OPTIONAL)
+  # Apply at: https://about.jstor.org/whats-in-jstor/text-mining-support/
+  # System works without this, but research quality is higher with it
+  jstor: "your_jstor_api_key_here"
+  
+  # Semantic Scholar API - Academic papers (OPTIONAL, FREE)
+  # No key needed for basic use, but rate limits apply
+  # Register at: https://www.semanticscholar.org/product/api
+  semantic_scholar: null
+  
+  # YouTube API - For transcript fetching (OPTIONAL)
+  # Get at: https://console.cloud.google.com/apis/credentials
+  youtube: null
+
+# ===== CLAUDE MODEL CONFIGURATION =====
+# Controls which Claude models are used and how
+
+models:
+  # Gatekeeper Model - Used for high-level coordination
+  # Options: claude-sonnet-4-20250514 (recommended), claude-opus-4-20250514
+  gatekeeper:
+    name: "claude-sonnet-4-20250514"  # Intelligent, balanced
+    max_tokens: 4000                   # Max response length
+    temperature: 0.3                   # 0=focused, 1=creative
+    
+  # Subagent Model - Used for specialized tasks
+  # Options: claude-sonnet-4-20250514, claude-haiku-4-5-20250514
+  subagent:
+    name: "claude-sonnet-4-20250514"  # Fast and efficient
+    max_tokens: 2000                   # Shorter responses
+    temperature: 0.7                   # More creative
+
+# ===== RESEARCH CONFIGURATION =====
+# Controls how the system searches for information
+
+research:
+  # Academic Database Priorities
+  # The system searches these in order until it finds enough sources
+  databases:
+    - name: "jstor"              # JSTOR (best quality)
+      priority: 1                # Check this first
+      enabled: true              # Set to false if no API key
+      min_sources: 10            # Try to find at least 10 papers
+      
+    - name: "semantic_scholar"   # Semantic Scholar (free, good quality)
+      priority: 2                # Check this second
+      enabled: true
+      min_sources: 15
+      
+    - name: "arxiv"              # arXiv (preprints, cutting-edge)
+      priority: 3
+      enabled: true
+      min_sources: 5
+      
+    - name: "pubmed"             # PubMed (medical/biological)
+      priority: 4
+      enabled: true
+      min_sources: 5
+      
+    - name: "crossref"           # CrossRef (DOI lookup)
+      priority: 5
+      enabled: true
+      min_sources: 10
+  
+  # Quality Thresholds
+  quality:
+    min_credibility_score: 7.0   # 1-10 scale, reject papers below this
+    min_citation_count: 50       # Minimum citations for inclusion
+    max_age_years: 10            # Don't use papers older than this
+    prefer_recent_years: 2       # Boost papers from last 2 years
+    
+  # Search Strategy
+  search:
+    max_papers_per_query: 50     # Maximum results to fetch per search
+    max_total_papers: 100        # Maximum total papers to analyze
+    timeout_seconds: 30          # Stop searching after this many seconds
+
+# ===== VIRAL OPTIMIZATION =====
+# Controls viral content analysis and optimization
+
+viral:
+  # Video Analysis
+  youtube_analysis:
+    min_views: 100000            # Minimum views to consider "viral"
+    min_watch_time: 40           # Minimum % watch time to analyze
+    max_videos_to_analyze: 10    # Analyze top N videos per topic
+    
+  # Hook Generation
+  hooks:
+    min_hook_score: 7.0          # Minimum engagement score (1-10)
+    require_counterintuitive: true  # Must have surprising element
+    target_curiosity_gap: 8.0    # Target curiosity score (1-10)
+    
+  # Psychological Triggers
+  triggers:
+    - "curiosity_gap"            # Create "need to know" feeling
+    - "pattern_interrupt"        # Break expectations
+    - "social_proof"             # "Everyone is talking about..."
+    - "scarcity"                 # "Rarely discussed..."
+    - "authority"                # Credible sources
+
+# ===== CONTENT GENERATION =====
+# Controls script and scene generation
+
+content:
+  # Script Settings
+  script:
+    target_length_words: 5000    # ~30 minute video at 150 words/min
+    min_length_words: 4000       # Minimum acceptable length
+    max_length_words: 6000       # Maximum acceptable length
+    
+    # Structure
+    require_three_act: true      # Use 3-act structure
+    require_hook_first_10s: true # Must hook viewers in 10 seconds
+    require_cliffhangers: true   # Add suspense at key moments
+    
+  # Scene Architecture
+  scenes:
+    min_scenes: 15               # Minimum number of scenes
+    max_scenes: 30               # Maximum number of scenes
+    avg_scene_duration_sec: 60   # Target seconds per scene
+    
+    # Visual Requirements
+    require_b_roll_suggestions: true  # Suggest B-roll footage
+    require_graphics_notes: true      # Note where graphics help
+    require_music_cues: true          # Suggest music changes
+
+# ===== VECTOR DATABASE =====
+# For storing and retrieving context
+
+vector_database:
+  # Which vector DB to use: "chromadb" or "qdrant"
+  provider: "chromadb"
+  
+  # ChromaDB Settings (local, file-based)
+  chromadb:
+    persist_directory: "./chroma_db"  # Where to store data
+    collection_name: "viral_context"   # Collection for this project
+    
+  # Qdrant Settings (more powerful, can use cloud or local)
+  qdrant:
+    host: "localhost"            # "localhost" for local, URL for cloud
+    port: 6333                   # Default Qdrant port
+    collection_name: "viral_context"
+    use_cloud: false             # Set true for Qdrant Cloud
+    
+  # Embedding Settings
+  embeddings:
+    model: "text-embedding-3-small"  # OpenAI embedding model
+    chunk_size: 500              # Tokens per chunk
+    chunk_overlap: 50            # Overlap between chunks
+    max_chunks_per_doc: 100      # Maximum chunks to store per document
+
+# ===== WORKFLOW CONFIGURATION =====
+# Controls the multi-agent workflow
+
+workflow:
+  # Coordination
+  max_iterations: 3              # Maximum refinement loops
+  consensus_threshold: 0.75      # 75% confidence required to proceed
+  parallel_execution: true       # Run subagents in parallel when possible
+  
+  # Gatekeeper Behavior
+  gatekeepers:
+    enable_validation: true      # Validate subagent outputs
+    enable_refinement: true      # Request improvements if needed
+    max_refinement_rounds: 2     # Maximum times to refine
+    
+  # Quality Gates
+  quality_gates:
+    min_research_confidence: 0.85      # Overall research quality
+    min_viral_score: 7.0               # Viral potential score
+    min_credibility_score: 8.0         # Source credibility
+    require_all_gates: true            # All gates must pass
+
+# ===== SYSTEM BEHAVIOR =====
+# General system settings
+
+system:
+  # Logging
+  logging:
+    level: "INFO"                # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format: "detailed"           # "simple" or "detailed"
+    log_to_file: true           # Save logs to file
+    log_file: "logs/system.log" # Log file location
+    
+  # Performance
+  performance:
+    cache_enabled: true          # Cache API responses
+    cache_ttl_hours: 24         # How long to cache (hours)
+    retry_failed_requests: true  # Retry failed API calls
+    max_retries: 3              # Maximum retry attempts
+    
+  # Safety
+  safety:
+    rate_limit_requests: true    # Respect API rate limits
+    max_requests_per_minute: 50  # Claude API limit
+    backup_results: true         # Save results as backup
+    backup_directory: "./backups"
+
+# ===== COST MANAGEMENT =====
+# Track and limit API costs
+
+costs:
+  # Budget Limits
+  max_cost_per_documentary: 1.00  # Maximum $ per video (alerts if exceeded)
+  max_monthly_cost: 100.00        # Maximum monthly spend
+  
+  # Token Limits (to control costs)
+  max_input_tokens_per_request: 100000   # Claude input limit
+  max_output_tokens_per_request: 4000    # Claude output limit
+  
+  # Alerts
+  alert_at_50_percent: true     # Alert at 50% of budget
+  alert_at_80_percent: true     # Alert at 80% of budget
+
+# ================================================================
+# QUICK START GUIDE
+# ================================================================
+#
+# 1. GET API KEYS:
+#    - Anthropic: https://console.anthropic.com/ (REQUIRED)
+#    - OpenAI: https://platform.openai.com/api-keys (REQUIRED)
+#
+# 2. COPY THIS FILE:
+#    cp config.example.yaml config.yaml
+#
+# 3. ADD YOUR KEYS:
+#    Edit config.yaml and replace "your_key_here" with real keys
+#
+# 4. TEST CONFIGURATION:
+#    python scripts/quick_test.py
+#
+# 5. START CREATING:
+#    Ready to generate viral documentaries!
+#
+# ================================================================
